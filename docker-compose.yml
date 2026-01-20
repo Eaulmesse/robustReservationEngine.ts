@@ -22,7 +22,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Application NestJS
+  # Application NestJS (Production)
   app:
     build:
       context: .
@@ -38,6 +38,33 @@ services:
       DATABASE_NAME: reservation_db
       DATABASE_USER: reservation_user
       DATABASE_PASSWORD: reservation_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - reservation-network
+    profiles:
+      - production
+
+  # Application NestJS (Développement avec hot reload)
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: reservation-app-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: reservation_db
+      DATABASE_USER: reservation_user
+      DATABASE_PASSWORD: reservation_password
+    volumes:
+      - .:/app
+      - /app/node_modules
     depends_on:
       postgres:
         condition: service_healthy
