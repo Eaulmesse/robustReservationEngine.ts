@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+enum UserRole {
+  CLIENT
+  ADMIN
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model User {
+  id            String        @id @default(uuid())
+  email         String        @unique
+  firstName     String
+  lastName      String
+  password      String
+  role          UserRole      @default(CLIENT)
+  phone         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  // Relations
+  appointments  Appointment[]
+
+  @@map("users")
+}
+
+model Provider {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  description   String?
+  phone         String?
+  address       String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  availabilities Availability[]
+  appointments   Appointment[]
+
+  @@map("providers")
+}
+
+model Availability {
+  id            String      @id @default(uuid())
+  providerId    String
+  dayOfWeek     DayOfWeek
+  startTime     String      // Format HH:MM (ex: "09:00")
+  endTime       String      // Format HH:MM (ex: "17:00")
+  slotDuration  Int         // Durée d'un créneau en minutes (ex: 30)
+  isRecurring   Boolean     @default(true) // Si c'est récurrent chaque semaine
+  specificDate  DateTime?   // Pour des disponibilités spécifiques à une date
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // Relations
+  provider      Provider    @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("availabilities")
+  @@index([providerId])
+  @@index([dayOfWeek])
+}
+
+// Modèle Appointment - Rendez-vous/Réservation
+model Appointment {
+  id            String            @id @default(uuid())
+  userId        String
+  providerId    String
+  startTime     DateTime
+  endTime       DateTime
+  status        AppointmentStatus @default(PENDING)
+  notes         String?
+  cancelReason  String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  
+  // Relations
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider      Provider          @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("appointments")
+  @@index([userId])
+  @@index([providerId])
+  @@index([startTime])
+  @@index([status])
+}
+
+
