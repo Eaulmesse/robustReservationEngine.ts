@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
-import { AppointmentStatus } from '../../generated/prisma';
+import { AppointmentStatus, DayOfWeek } from '../../generated/prisma';
 
 @Injectable()
 export class AppointmentsService {
@@ -126,5 +126,12 @@ export class AppointmentsService {
     return this.prisma.appointment.delete({
       where: { id },
     });
+  }
+
+  async findAvailableByDate(date: string, providerId: string) {
+    const availableSlots = await this.prisma.availability.findMany({
+      where: { providerId, dayOfWeek: DayOfWeek.MONDAY },
+    });
+    return availableSlots;
   }
 }

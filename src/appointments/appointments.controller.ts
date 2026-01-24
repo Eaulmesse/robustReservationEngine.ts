@@ -60,4 +60,9 @@ export class AppointmentsController {
   remove(@Param('id') id: string) {
     return this.appointmentsService.remove(id);
   }
+
+  @Get('available/:date')
+  findAvailable(@Param('date') date: string, @Query('providerId') providerId: string) {
+    return this.appointmentsService.findAvailableByDate(date, providerId);
+  }
 }
