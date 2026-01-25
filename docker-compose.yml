@@ -5,8 +5,7 @@ services:
     container_name: reservation-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-reservation_db}
-      POSTGRES_USER: ${POSTGRES_USER:-reservation_user}
+      POSTGRES_DB: reservation_db
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reservation_password}
     ports:
       - "5432:5432"
@@ -15,25 +14,10 @@ services:
     networks:
       - reservation-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U reservation_user -d reservation_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d reservation_db"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # pgAdmin - Interface graphique pour PostgreSQL
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: reservation-pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@reservation.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    networks:
-      - reservation-network
-    depends_on:
-      - postgres
 
   # Application NestJS (Production)
   app:
@@ -47,7 +31,7 @@ services:
       - "5555:5555"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-reservation_password}@postgres:5432/reservation_db?schema=public
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,7 +52,7 @@ services:
       - "5555:5555"
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-reservation_password}@postgres:5432/reservation_db?schema=public
     volumes:
       - .:/app
       - /app/node_modules

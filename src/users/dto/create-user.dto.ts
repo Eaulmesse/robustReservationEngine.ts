@@ -1,5 +1,6 @@
 import { UserRole } from '../../../generated/prisma';
 
+
 export class CreateUserDto {
   email: string;
   firstName: string;
@@ -8,3 +9,4 @@ export class CreateUserDto {
   role?: UserRole;
   phone?: string;
 }
+

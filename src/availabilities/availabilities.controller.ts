@@ -7,15 +7,12 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { AvailabilitiesService } from './availabilities.service';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('availabilities')
-@UseGuards(JwtAuthGuard)
 export class AvailabilitiesController {
   constructor(
     private readonly availabilitiesService: AvailabilitiesService,
