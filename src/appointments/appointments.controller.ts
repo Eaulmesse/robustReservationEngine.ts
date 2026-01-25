@@ -13,9 +13,12 @@ import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { UserRole } from '../../generated/prisma';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('appointments')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
@@ -25,6 +28,7 @@ export class AppointmentsController {
   }
 
   @Get()
+  @Roles(UserRole.ADMIN)
   findAll(
     @Query('userId') userId?: string,
     @Query('providerId') providerId?: string,
@@ -44,6 +48,7 @@ export class AppointmentsController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.ADMIN)
   update(
     @Param('id') id: string,
     @Body() updateAppointmentDto: UpdateAppointmentDto,
@@ -57,6 +62,7 @@ export class AppointmentsController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {
     return this.appointmentsService.remove(id);
   }

@@ -12,12 +12,12 @@ import { ProvidersService } from './providers.service';
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserRole } from '../../generated/prisma';
 import { Roles } from '../auth/decorators/roles.decorator';
 
-
 @Controller('providers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ProvidersController {
   constructor(private readonly providersService: ProvidersService) {}
 

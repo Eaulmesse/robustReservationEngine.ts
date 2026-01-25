@@ -7,18 +7,25 @@ import {
   Param,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { AvailabilitiesService } from './availabilities.service';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { UserRole } from '../../generated/prisma';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('availabilities')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AvailabilitiesController {
   constructor(
     private readonly availabilitiesService: AvailabilitiesService,
   ) {}
 
   @Post()
+  @Roles(UserRole.ADMIN)
   create(@Body() createAvailabilityDto: CreateAvailabilityDto) {
     return this.availabilitiesService.create(createAvailabilityDto);
   }
@@ -37,6 +44,7 @@ export class AvailabilitiesController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.ADMIN)
   update(
     @Param('id') id: string,
     @Body() updateAvailabilityDto: UpdateAvailabilityDto,
@@ -45,6 +53,7 @@ export class AvailabilitiesController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {
     return this.availabilitiesService.remove(id);
   }
