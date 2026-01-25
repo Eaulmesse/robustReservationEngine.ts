@@ -8,25 +8,30 @@ import { AppointmentStatus, DayOfWeek } from '../../generated/prisma';
 export class AppointmentsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createAppointmentDto: CreateAppointmentDto) {
+  async create(createAppointmentDto: CreateAppointmentDto, userId?: string) {
+    // Si userId est fourni (par le système), on l'utilise, sinon on utilise celui du DTO
+    const appointmentData = userId 
+      ? { ...createAppointmentDto, userId }
+      : createAppointmentDto;
+
     // Vérifier si le créneau est disponible
     const conflictingAppointment = await this.prisma.appointment.findFirst({
       where: {
-        providerId: createAppointmentDto.providerId,
+        providerId: appointmentData.providerId,
         status: {
           in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED],
         },
         OR: [
           {
             AND: [
-              { startTime: { lte: createAppointmentDto.startTime } },
-              { endTime: { gt: createAppointmentDto.startTime } },
+              { startTime: { lte: appointmentData.startTime } },
+              { endTime: { gt: appointmentData.startTime } },
             ],
           },
           {
             AND: [
-              { startTime: { lt: createAppointmentDto.endTime } },
-              { endTime: { gte: createAppointmentDto.endTime } },
+              { startTime: { lt: appointmentData.endTime } },
+              { endTime: { gte: appointmentData.endTime } },
             ],
           },
         ],
@@ -38,10 +43,28 @@ export class AppointmentsService {
     }
 
     return this.prisma.appointment.create({
-      data: createAppointmentDto,
+      data: appointmentData,
       include: {
-        user: true,
-        provider: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
   }
@@ -49,8 +72,26 @@ export class AppointmentsService {
   async findAll() {
     return this.prisma.appointment.findMany({
       include: {
-        user: true,
-        provider: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
   }
@@ -59,8 +100,26 @@ export class AppointmentsService {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
       include: {
-        user: true,
-        provider: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
 
@@ -75,8 +134,26 @@ export class AppointmentsService {
     return this.prisma.appointment.findMany({
       where: { userId },
       include: {
-        user: true,
-        provider: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
   }
@@ -85,8 +162,26 @@ export class AppointmentsService {
     return this.prisma.appointment.findMany({
       where: { providerId },
       include: {
-        user: true,
-        provider: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
   }
@@ -98,8 +193,26 @@ export class AppointmentsService {
       where: { id },
       data: updateAppointmentDto,
       include: {
-        user: true,
-        provider: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
   }
@@ -114,8 +227,26 @@ export class AppointmentsService {
         cancelReason,
       },
       include: {
-        user: true,
-        provider: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
   }

@@ -7,4 +7,6 @@ export class RegisterDto {
   password: string;
   role?: UserRole;
   phone?: string;
+  description?: string;
+  address?: string;
 }

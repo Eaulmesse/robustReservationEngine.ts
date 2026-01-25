@@ -7,4 +7,7 @@ export class UpdateUserDto {
   password?: string;
   role?: UserRole;
   phone?: string;
+  description?: string;
+  address?: string;
+  isActive?: boolean;
 }

@@ -1,6 +1,5 @@
 import { UserRole } from '../../../generated/prisma';
 
-
 export class CreateUserDto {
   email: string;
   firstName: string;
@@ -8,5 +7,8 @@ export class CreateUserDto {
   password: string;
   role?: UserRole;
   phone?: string;
+  description?: string;
+  address?: string;
+  isActive?: boolean;
 }
 

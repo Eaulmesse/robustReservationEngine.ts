@@ -11,7 +11,17 @@ export class AvailabilitiesService {
     return this.prisma.availability.create({
       data: createAvailabilityDto,
       include: {
-        provider: true,
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
   }
@@ -19,7 +29,17 @@ export class AvailabilitiesService {
   async findAll() {
     return this.prisma.availability.findMany({
       include: {
-        provider: true,
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
   }
@@ -28,7 +48,17 @@ export class AvailabilitiesService {
     const availability = await this.prisma.availability.findUnique({
       where: { id },
       include: {
-        provider: true,
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
 
@@ -43,7 +73,17 @@ export class AvailabilitiesService {
     return this.prisma.availability.findMany({
       where: { providerId },
       include: {
-        provider: true,
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
   }
@@ -55,7 +95,17 @@ export class AvailabilitiesService {
       where: { id },
       data: updateAvailabilityDto,
       include: {
-        provider: true,
+        provider: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            description: true,
+            address: true,
+          },
+        },
       },
     });
   }

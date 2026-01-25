@@ -42,36 +42,25 @@ model User {
   password      String
   role          UserRole      @default(CLIENT)
   phone         String?
+  description   String?       // Description en tant que provider (optionnel)
+  address       String?       // Adresse en tant que provider (optionnel)
+  isActive      Boolean       @default(true)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   
-  // Relations
-  appointments  Appointment[]
+  // Relations - En tant que client
+  appointmentsAsClient    Appointment[]  @relation("UserAppointments")
+  
+  // Relations - En tant que provider
+  availabilities          Availability[] @relation("ProviderAvailabilities")
+  appointmentsAsProvider  Appointment[]  @relation("ProviderAppointments")
 
   @@map("users")
 }
 
-model Provider {
-  id            String         @id @default(uuid())
-  name          String
-  email         String         @unique
-  description   String?
-  phone         String?
-  address       String?
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  
-  // Relations
-  availabilities Availability[]
-  appointments   Appointment[]
-
-  @@map("providers")
-}
-
 model Availability {
   id            String      @id @default(uuid())
-  providerId    String
+  providerId    String      // User qui propose les créneaux
   dayOfWeek     DayOfWeek
   startTime     String      // Format HH:MM (ex: "09:00")
   endTime       String      // Format HH:MM (ex: "17:00")
@@ -83,7 +72,7 @@ model Availability {
   updatedAt     DateTime    @updatedAt
   
   // Relations
-  provider      Provider    @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  provider      User        @relation("ProviderAvailabilities", fields: [providerId], references: [id], onDelete: Cascade)
 
   @@map("availabilities")
   @@index([providerId])
@@ -93,8 +82,8 @@ model Availability {
 // Modèle Appointment - Rendez-vous/Réservation
 model Appointment {
   id            String            @id @default(uuid())
-  userId        String
-  providerId    String
+  userId        String            // User qui prend le RDV (client)
+  providerId    String            // User qui reçoit le RDV (provider)
   startTime     DateTime
   endTime       DateTime
   status        AppointmentStatus @default(PENDING)
@@ -104,8 +93,8 @@ model Appointment {
   updatedAt     DateTime          @updatedAt
   
   // Relations
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider      Provider          @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  user          User              @relation("UserAppointments", fields: [userId], references: [id], onDelete: Cascade)
+  provider      User              @relation("ProviderAppointments", fields: [providerId], references: [id], onDelete: Cascade)
 
   @@map("appointments")
   @@index([userId])

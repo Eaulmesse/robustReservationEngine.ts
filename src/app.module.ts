@@ -4,7 +4,6 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { ProvidersModule } from './providers/providers.module';
 import { AvailabilitiesModule } from './availabilities/availabilities.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 
@@ -13,7 +12,6 @@ import { AppointmentsModule } from './appointments/appointments.module';
     PrismaModule,
     AuthModule,
     UsersModule,
-    ProvidersModule,
     AvailabilitiesModule,
     AppointmentsModule,
   ],

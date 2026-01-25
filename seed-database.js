@@ -48,8 +48,55 @@ async function seedDatabase() {
   const TOKEN = adminResult.access_token;
   console.log("✅ Admin créé et connecté\n");
   
-  // 2. Créer des users clients
-  console.log("👥 Création des clients...");
+  // 2. Créer des users qui seront providers (avec description et address)
+  console.log("🏢 Création des users-providers...");
+  
+  const coiffeurResult = await request("POST", "/auth/register", {
+    email: "coiffeur@elegance.fr",
+    firstName: "Sophie",
+    lastName: "Coiffure",
+    password: "password123",
+    role: "CLIENT",
+    phone: "+33145678901",
+    description: "Salon de coiffure moderne au cœur de Paris",
+    address: "15 Rue de la Paix, 75002 Paris"
+  });
+  const coiffeur = coiffeurResult?.user;
+  console.log("✅ Coiffeur créé:", coiffeur?.firstName, coiffeur?.lastName);
+  
+  const medecinResult = await request("POST", "/auth/register", {
+    email: "dr.bertrand@medicale.fr",
+    firstName: "Sophie",
+    lastName: "Bertrand",
+    password: "password123",
+    role: "CLIENT",
+    phone: "+33156789012",
+    description: "Médecin généraliste, consultations sur rendez-vous",
+    address: "42 Avenue des Champs-Élysées, 75008 Paris"
+  });
+  const medecin = medecinResult?.user;
+  console.log("✅ Médecin créé:", medecin?.firstName, medecin?.lastName);
+  
+  const garageResult = await request("POST", "/auth/register", {
+    email: "garage@autoplus.fr",
+    firstName: "Jean",
+    lastName: "Garage",
+    password: "password123",
+    role: "CLIENT",
+    phone: "+33167890123",
+    description: "Réparation et entretien automobile",
+    address: "78 Boulevard Périphérique, 75015 Paris"
+  });
+  const garage = garageResult?.user;
+  console.log("✅ Garage créé:", garage?.firstName, garage?.lastName);
+  
+  if (!coiffeur || !medecin || !garage) {
+    console.error("❌ Erreur lors de la création des providers");
+    return;
+  }
+  
+  // 3. Créer des clients normaux
+  console.log("\n👥 Création des clients...");
   
   const usersData = [
     { email: "jean.dupont@email.com", firstName: "Jean", lastName: "Dupont", password: "password123", phone: "+33612345678" },
@@ -57,57 +104,19 @@ async function seedDatabase() {
     { email: "pierre.durand@email.com", firstName: "Pierre", lastName: "Durand", password: "password123", phone: "+33698765432" }
   ];
   
-  const users = [];
+  const clients = [];
   for (const userData of usersData) {
     const result = await request("POST", "/auth/register", {
       ...userData,
       role: "CLIENT"
     });
     if (result?.user) {
-      users.push(result.user);
+      clients.push(result.user);
       console.log(`✅ Client créé: ${result.user.firstName} ${result.user.lastName}`);
     }
   }
   
-  // 3. Créer des providers
-  console.log("\n🏢 Création des providers...");
-  
-  const coiffeur = await request("POST", "/providers", {
-    name: "Salon Élégance",
-    email: "contact@elegance-coiffure.fr",
-    description: "Salon de coiffure moderne au cœur de Paris",
-    phone: "+33145678901",
-    address: "15 Rue de la Paix, 75002 Paris",
-    isActive: true
-  }, TOKEN);
-  console.log("✅ Coiffeur créé:", coiffeur?.name);
-  
-  const medecin = await request("POST", "/providers", {
-    name: "Dr. Sophie Bertrand",
-    email: "dr.bertrand@medicale.fr",
-    description: "Médecin généraliste, consultations sur rendez-vous",
-    phone: "+33156789012",
-    address: "42 Avenue des Champs-Élysées, 75008 Paris",
-    isActive: true
-  }, TOKEN);
-  console.log("✅ Médecin créé:", medecin?.name);
-  
-  const garage = await request("POST", "/providers", {
-    name: "Garage AutoPlus",
-    email: "garage.autoplus@email.fr",
-    description: "Réparation et entretien automobile",
-    phone: "+33167890123",
-    address: "78 Boulevard Périphérique, 75015 Paris",
-    isActive: true
-  }, TOKEN);
-  console.log("✅ Garage créé:", garage?.name);
-  
-  if (!coiffeur || !medecin || !garage) {
-    console.error("❌ Erreur lors de la création des providers");
-    return;
-  }
-  
-  // 4. Créer des availabilities
+  // 4. Créer des availabilities pour les providers
   console.log("\n📅 Création des disponibilités...");
   
   // Coiffeur - Lundi à Vendredi
@@ -158,10 +167,10 @@ async function seedDatabase() {
   // 5. Créer des appointments
   console.log("\n📆 Création de rendez-vous...");
   
-  if (users.length >= 3) {
+  if (clients.length >= 3) {
     // RDV Coiffeur
     await request("POST", "/appointments", {
-      userId: users[0].id,
+      userId: clients[0].id,
       providerId: coiffeur.id,
       startTime: "2026-01-27T10:00:00Z",
       endTime: "2026-01-27T10:30:00Z",
@@ -172,7 +181,7 @@ async function seedDatabase() {
     
     // RDV Médecin
     await request("POST", "/appointments", {
-      userId: users[1].id,
+      userId: clients[1].id,
       providerId: medecin.id,
       startTime: "2026-01-27T15:00:00Z",
       endTime: "2026-01-27T15:20:00Z",
@@ -183,7 +192,7 @@ async function seedDatabase() {
     
     // RDV Garage
     await request("POST", "/appointments", {
-      userId: users[2].id,
+      userId: clients[2].id,
       providerId: garage.id,
       startTime: "2026-01-28T09:00:00Z",
       endTime: "2026-01-28T10:00:00Z",
@@ -196,13 +205,17 @@ async function seedDatabase() {
   console.log("\n🎉 Seed terminé avec succès !");
   console.log("\n📊 Résumé:");
   console.log(`   - 1 Admin créé`);
-  console.log(`   - ${users.length} Clients créés`);
-  console.log(`   - 3 Providers créés`);
+  console.log(`   - 3 Users-Providers créés (peuvent recevoir des RDV)`);
+  console.log(`   - ${clients.length} Clients créés (peuvent prendre des RDV)`);
   console.log(`   - 12 Availabilities créées`);
   console.log(`   - 3 Appointments créés`);
   console.log("\n🔑 Identifiants admin:");
   console.log(`   Email: admin@reservation.com`);
   console.log(`   Password: admin123`);
+  console.log("\n🔑 Identifiants providers:");
+  console.log(`   Email: coiffeur@elegance.fr / Password: password123`);
+  console.log(`   Email: dr.bertrand@medicale.fr / Password: password123`);
+  console.log(`   Email: garage@autoplus.fr / Password: password123`);
   console.log("\n🔑 Identifiants clients:");
   console.log(`   Email: jean.dupont@email.com / Password: password123`);
   console.log(`   Email: marie.martin@email.com / Password: password123`);
