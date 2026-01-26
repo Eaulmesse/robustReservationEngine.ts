@@ -1,11 +1,11 @@
-import { AppointmentStatus } from '../../../generated/prisma';
+import { PartialType, OmitType } from '@nestjs/mapped-types';
+import { CreateAppointmentDto } from './create-appointment.dto';
+import { IsOptional, IsString } from 'class-validator';
 
-export class UpdateAppointmentDto {
-  userId?: string;
-  providerId?: string;
-  startTime?: Date;
-  endTime?: Date;
-  status?: AppointmentStatus;
-  notes?: string;
+export class UpdateAppointmentDto extends PartialType(
+  OmitType(CreateAppointmentDto, ['userId'] as const)
+) {
+  @IsString()
+  @IsOptional()
   cancelReason?: string;
 }

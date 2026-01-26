@@ -1,12 +1,4 @@
-import { UserRole } from '../../../generated/prisma';
+import { OmitType } from '@nestjs/mapped-types';
+import { CreateUserDto } from '../../users/dto/create-user.dto';
 
-export class RegisterDto {
-  email: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-  role?: UserRole;
-  phone?: string;
-  description?: string;
-  address?: string;
-}
+export class RegisterDto extends OmitType(CreateUserDto, ['isActive'] as const) {}
