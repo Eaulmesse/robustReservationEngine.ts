@@ -1,28 +1,21 @@
 import { AppointmentStatus } from '../../../generated/prisma';
-import { IsDate, IsString, IsOptional, IsNotEmpty, IsEnum, IsUUID } from 'class-validator';
+import { IsDateString, IsString, IsOptional, IsNotEmpty, IsEnum, IsUUID } from 'class-validator';
 
 export class CreateAppointmentDto {
-  @IsString()
-  @IsNotEmpty()
-  @IsUUID()
-  userId: string;
-
+  // userId est retiré du DTO - il viendra du JWT via @CurrentUser()
+  
   @IsString()
   @IsNotEmpty()
   @IsUUID()
   providerId: string;
   
-  @IsDate()
+  @IsDateString()
   @IsNotEmpty()
-  startTime: Date;
+  startTime: string; // ISO date string (ex: "2026-01-27T10:00:00Z")
 
-  @IsDate()
+  @IsDateString()
   @IsNotEmpty() 
-  endTime: Date;
-
-  @IsEnum(AppointmentStatus)
-  @IsOptional()
-  status?: AppointmentStatus;
+  endTime: string; // ISO date string
   
   @IsString()
   @IsOptional()

@@ -8,11 +8,24 @@ import { AppointmentStatus, DayOfWeek } from '../../generated/prisma';
 export class AppointmentsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createAppointmentDto: CreateAppointmentDto, userId?: string) {
-    // Si userId est fourni (par le système), on l'utilise, sinon on utilise celui du DTO
-    const appointmentData = userId 
-      ? { ...createAppointmentDto, userId }
-      : createAppointmentDto;
+  async create(createAppointmentDto: CreateAppointmentDto, userId: string) {
+    // Convertir les strings ISO en Date
+    const startTime = new Date(createAppointmentDto.startTime);
+    const endTime = new Date(createAppointmentDto.endTime);
+    
+    // Validation basique
+    if (endTime <= startTime) {
+      throw new BadRequestException('La date de fin doit être après la date de début');
+    }
+
+    const appointmentData = {
+      userId,
+      providerId: createAppointmentDto.providerId,
+      startTime,
+      endTime,
+      notes: createAppointmentDto.notes,
+      status: AppointmentStatus.PENDING,
+    };
 
     // Vérifier si le créneau est disponible
     const conflictingAppointment = await this.prisma.appointment.findFirst({
@@ -24,14 +37,14 @@ export class AppointmentsService {
         OR: [
           {
             AND: [
-              { startTime: { lte: appointmentData.startTime } },
-              { endTime: { gt: appointmentData.startTime } },
+              { startTime: { lte: startTime } },
+              { endTime: { gt: startTime } },
             ],
           },
           {
             AND: [
-              { startTime: { lt: appointmentData.endTime } },
-              { endTime: { gte: appointmentData.endTime } },
+              { startTime: { lt: endTime } },
+              { endTime: { gte: endTime } },
             ],
           },
         ],
