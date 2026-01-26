@@ -27,59 +27,28 @@ export class AppointmentsService {
       status: AppointmentStatus.PENDING,
     };
 
-    // Vérifier si le créneau est disponible
-    const conflictingAppointment = await this.prisma.appointment.findFirst({
-      where: {
-        providerId: appointmentData.providerId,
-        status: {
-          in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED],
+    return await this.prisma.$transaction(async (tx) => {
+      const conflicting = await tx.$queryRaw`
+        SELECT * FROM appointments 
+        WHERE "providerId" = ${appointmentData.providerId}
+        AND status IN ('PENDING', 'CONFIRMED')
+        AND (
+          ("startTime" <= ${startTime} AND "endTime" > ${startTime})
+          OR ("startTime" < ${endTime} AND "endTime" >= ${endTime})
+        )
+        FOR UPDATE
+      `;
+      if((conflicting as { id: string }[]).length > 0) throw new BadRequestException('Ce créneau est déjà réservé');
+
+      return await tx.appointment.create({
+        data: appointmentData,
+        include: {
+          user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
+          provider: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, description: true, address: true } },
         },
-        OR: [
-          {
-            AND: [
-              { startTime: { lte: startTime } },
-              { endTime: { gt: startTime } },
-            ],
-          },
-          {
-            AND: [
-              { startTime: { lt: endTime } },
-              { endTime: { gte: endTime } },
-            ],
-          },
-        ],
-      },
+      });
     });
 
-    if (conflictingAppointment) {
-      throw new BadRequestException('Ce créneau est déjà réservé');
-    }
-
-    return this.prisma.appointment.create({
-      data: appointmentData,
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-          },
-        },
-        provider: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            description: true,
-            address: true,
-          },
-        },
-      },
-    });
   }
 
   async findAll() {
