@@ -5,6 +5,8 @@ import { LoginDto } from './dto/login.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { OAuth2Client } from 'google-auth-library';
+
 
 @Controller('auth')
 export class AuthController {
@@ -25,5 +27,14 @@ export class AuthController {
   @Get('profile')
   async getProfile(@CurrentUser() user: any) {
     return this.authService.getProfile(user.id);
+  }
+
+  @Post('google-login')
+  async googleLogin(@Body() body: { googleToken: string }) {
+    const googleToken = await this.authService.verifyGoogleToken(body.googleToken);
+
+    const user = await this.authService.findOrCreateGoogleUser(googleToken);
+
+    return this.authService.login(user);
   }
 }

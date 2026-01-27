@@ -3,13 +3,62 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
+import { ConfigService } from '@nestjs/config';
+import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class AuthService {
+  private readonly googleClient: OAuth2Client;
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.googleClient = new OAuth2Client(
+      this.configService.get('GOOGLE_CLIENT_ID')
+    );
+  }
+
+  async verifyGoogleToken(token: string) {
+    const ticket = await this.googleClient.verifyIdToken({
+      idToken: token,
+      audience: this.configService.get('GOOGLE_CLIENT_ID'),
+    });
+    
+    const payload = ticket.getPayload();
+
+    if (!payload) {
+      throw new UnauthorizedException('Token Google invalide');
+    }
+
+    return {
+      email: payload.email,
+      firstName: payload.given_name,
+      lastName: payload.family_name,
+      googleId: payload.sub,
+    };
+  }
+
+  async findOrCreateGoogleUser(googleData: any) {
+    let user = await this.prisma.user.findUnique({
+      where: { email: googleData.email }
+    });
+    
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email: googleData.email,
+          firstName: googleData.firstName,
+          lastName: googleData.lastName,
+          password: '', 
+          role: 'CLIENT',
+        }
+      });
+    }
+    
+    const { password: _, ...result } = user;
+    return result;
+  }
 
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
