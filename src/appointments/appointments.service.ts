@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentStatus, DayOfWeek } from '../../generated/prisma';
+import { getDayOfWeekFromDate } from 'src/utils/date.utils';
 
 @Injectable()
 export class AppointmentsService {
@@ -242,9 +243,61 @@ export class AppointmentsService {
   }
 
   async findAvailableByDate(date: string, providerId: string) {
-    const availableSlots = await this.prisma.availability.findMany({
-      where: { providerId, dayOfWeek: DayOfWeek.MONDAY },
+    const dateObj = new Date(date);
+    const dayOfWeek = getDayOfWeekFromDate(dateObj);
+
+  
+    const availabilities = await this.prisma.availability.findMany({
+      where: { providerId, dayOfWeek, isActive: true },
     });
-    return availableSlots;
+    
+  
+    const allSlots: { startTime: string; endTime: string; duration: number }[] = [];
+    for (const avail of availabilities) {
+      
+      const [startHour, startMin] = avail.startTime.split(':').map(Number);
+      const [endHour, endMin] = avail.endTime.split(':').map(Number);
+      
+      
+      let current = new Date(dateObj);
+      current.setHours(startHour, startMin, 0, 0);
+      
+      const end = new Date(dateObj);
+      end.setHours(endHour, endMin, 0, 0);
+      
+      while (current < end) {
+        const slotEnd = new Date(current.getTime() + avail.slotDuration * 60000);
+        
+        allSlots.push({
+          startTime: current.toISOString(),
+          endTime: slotEnd.toISOString(),
+          duration: avail.slotDuration
+        });
+        
+        current = slotEnd; 
+      }
+    }
+  
+    const startOfDay = new Date(dateObj.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(dateObj.setHours(23, 59, 59, 999));
+    
+    const appointments = await this.prisma.appointment.findMany({
+      where: {
+        providerId,
+        startTime: { gte: startOfDay, lt: endOfDay },
+        status: { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED] }
+      }
+    });
+    
+    const freeSlots = allSlots.filter(slot => {
+      const slotStart = new Date(slot.startTime);
+      const slotEnd = new Date(slot.endTime);
+      
+      return !appointments.some(apt => {
+        return (apt.startTime < slotEnd && apt.endTime > slotStart);
+      });
+    });
+  
+    return freeSlots;
   }
 }
