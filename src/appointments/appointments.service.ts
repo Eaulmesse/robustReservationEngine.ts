@@ -4,10 +4,14 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentStatus, DayOfWeek } from '../../generated/prisma';
 import { getDayOfWeekFromDate } from 'src/utils/date.utils';
+import { GoogleService } from '../google/google.service';
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private googleService: GoogleService,
+  ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto, userId: string) {
     // Convertir les strings ISO en Date
@@ -29,6 +33,7 @@ export class AppointmentsService {
     };
 
     return await this.prisma.$transaction(async (tx) => {
+      // Vérification des conflits avec verrouillage pessimiste
       const conflicting = await tx.$queryRaw`
         SELECT * FROM appointments 
         WHERE "providerId" = ${appointmentData.providerId}
@@ -39,10 +44,68 @@ export class AppointmentsService {
         )
         FOR UPDATE
       `;
-      if((conflicting as { id: string }[]).length > 0) throw new BadRequestException('Ce créneau est déjà réservé');
+      if((conflicting as { id: string }[]).length > 0) {
+        throw new BadRequestException('Ce créneau est déjà réservé');
+      }
 
+      // Récupérer les infos du provider pour Google Meet
+      const provider = await tx.user.findUnique({
+        where: { id: appointmentData.providerId },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          googleAccessToken: true,
+        },
+      });
+
+      const client = await tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          email: true,
+          firstName: true,
+          lastName: true,
+        },
+      });
+
+      // Préparer les données Google Meet (optionnel)
+      let googleMeetData: {
+        meetingLink?: string;
+        googleEventId?: string;
+        googleCalendarId?: string;
+      } = {};
+
+      // Si le provider a un token Google, créer un événement Meet
+      if (provider?.googleAccessToken) {
+        try {
+          const meetEvent = await this.googleService.createMeetEvent(
+            provider.googleAccessToken,
+            {
+              startTime,
+              endTime,
+              summary: `Rendez-vous avec ${client?.firstName} ${client?.lastName}`,
+              description: createAppointmentDto.notes || 'Rendez-vous confirmé',
+              attendeeEmail: client?.email,
+            },
+          );
+
+          googleMeetData = {
+            meetingLink: meetEvent.meetingLink || undefined,
+            googleEventId: meetEvent.googleEventId || undefined,
+            googleCalendarId: meetEvent.googleCalendarId,
+          };
+        } catch (error) {
+          console.error('Erreur création Google Meet:', error);
+        }
+      }
+
+      // Créer l'appointment avec ou sans Google Meet
       return await tx.appointment.create({
-        data: appointmentData,
+        data: {
+          ...appointmentData,
+          ...googleMeetData,
+        },
         include: {
           user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
           provider: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, description: true, address: true } },
@@ -101,6 +164,7 @@ export class AppointmentsService {
             phone: true,
             description: true,
             address: true,
+            googleAccessToken: true,
           },
         },
       },
@@ -201,7 +265,20 @@ export class AppointmentsService {
   }
 
   async cancel(id: string, cancelReason: string) {
-    await this.findOne(id);
+    const appointment = await this.findOne(id);
+
+    // Si l'appointment a un événement Google Calendar, le supprimer
+    if (appointment.googleEventId && appointment.provider.googleAccessToken) {
+      try {
+        await this.googleService.deleteEvent(
+          appointment.provider.googleAccessToken,
+          appointment.googleEventId,
+        );
+      } catch (error) {
+        console.error('Erreur suppression Google Calendar:', error);
+        // Continue l'annulation même si la suppression Google échoue
+      }
+    }
 
     return this.prisma.appointment.update({
       where: { id },

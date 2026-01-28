@@ -45,6 +45,12 @@ model User {
   description   String?       // Description en tant que provider (optionnel)
   address       String?       // Adresse en tant que provider (optionnel)
   isActive      Boolean       @default(true)
+  
+  // Google OAuth & Calendar
+  googleAccessToken   String?   // Token d'accès Google 
+  googleRefreshToken  String?   // Token de rafraîchissement Google
+  googleCalendarId    String?   // ID du calendrier Google principal de l'utilisateur
+  
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   
@@ -89,6 +95,12 @@ model Appointment {
   status        AppointmentStatus @default(PENDING)
   notes         String?
   cancelReason  String?
+  
+  // Google Meet & Calendar
+  meetingLink       String?       // Lien Google Meet généré
+  googleEventId     String?       // ID de l'événement dans Google Calendar
+  googleCalendarId  String?       // ID du calendrier où l'événement est créé
+  
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   
