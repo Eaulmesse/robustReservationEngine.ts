@@ -1,0 +1,38 @@
+# Dépendances
+node_modules
+npm-debug.log
+package-lock.json
+
+# Next.js
+front/.next
+front/out
+
+# NestJS
+robust-reservation-engine/dist
+
+# Fichiers de développement
+*.log
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git
+.gitignore
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Tests
+coverage
+.nyc_output

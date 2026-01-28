@@ -1,0 +1,112 @@
+services:
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: nimbus-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reservation_db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reservation_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - nimbus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d reservation_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend NestJS (Production)
+  backend:
+    build:
+      context: ./robust-reservation-engine
+      dockerfile: Dockerfile
+    container_name: nimbus-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+      - "5555:5555"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-reservation_password}@postgres:5432/reservation_db?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - nimbus-network
+    profiles:
+      - production
+
+  # Backend NestJS (Développement avec hot reload)
+  backend-dev:
+    build:
+      context: ./robust-reservation-engine
+      dockerfile: Dockerfile.dev
+    container_name: nimbus-backend-dev
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+      - "5555:5555"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-reservation_password}@postgres:5432/reservation_db?schema=public
+    volumes:
+      - ./robust-reservation-engine:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - nimbus-network
+
+  # Frontend Next.js (Production)
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://backend:3000
+    container_name: nimbus-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    depends_on:
+      - backend
+    networks:
+      - nimbus-network
+    profiles:
+      - production
+
+  # Frontend Next.js (Développement avec hot reload)
+  frontend-dev:
+    build:
+      context: ./front
+      dockerfile: Dockerfile.dev
+    container_name: nimbus-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    volumes:
+      - ./front:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend-dev
+    networks:
+      - nimbus-network
+
+volumes:
+  postgres_data:
+
+networks:
+  nimbus-network:
+    driver: bridge
